@@ -9,9 +9,9 @@ def rpc_decorator(function):
     """ Wrap a Namkeo RPC call """
 
     @rpc
-    def wrapper(self, cid, *args):
+    def wrapper(self, cid, *args, **kwargs):
         """ Call wrapped function getting cid from RPC call """
         locals.set_cid(cid)
-        return function(self, *args)
+        return function(self, *args, **kwargs)
 
     return wrapper

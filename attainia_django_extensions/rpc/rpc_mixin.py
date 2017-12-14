@@ -42,7 +42,7 @@ class RpcMixin(object):
         conn_pool_provider_path = import_string(settings.RPC_CONNECTION_POOL_PROVIDER)
         return conn_pool_provider_path()
 
-    def call_service_method(self, service_name: str, method_name: str, use_async: bool, *args):
+    def call_service_method(self, service_name: str, method_name: str, use_async: bool, *args, **kwargs):
         """ Call an RPC method from a service """
         self.logger.debug("Calling service: %s, method: %s", service_name, method_name)
 
@@ -55,9 +55,9 @@ class RpcMixin(object):
                 method = getattr(service, method_name)
 
                 if use_async:
-                    return method.call_async(cid, *args)
+                    return method.call_async(cid, *args, **kwargs)
                 else:
-                    return method(cid, *args)
+                    return method(cid, *args, **kwargs)
 
         except Exception as ex:
             self.logger.error("RPC call failed with error %s", getattr(ex, 'message', repr(ex)))
