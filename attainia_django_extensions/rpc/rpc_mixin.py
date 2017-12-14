@@ -24,6 +24,13 @@ class RpcMixin(object):
         MyClass(RpcMixin):
             ...
 
+            # Make service RPC
+            self.call_service_method("auth_publisher", "user_created", True, email, uuid)
+
+            # Dispatch event
+            self.dispatch_event("user_created", {"email": email, "uuid": uuid})
+
+
 
     Requires the class and path to the provider of the RPC connection pool in the settings.
 
