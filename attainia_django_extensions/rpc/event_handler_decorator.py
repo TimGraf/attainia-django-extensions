@@ -6,7 +6,7 @@ from cid import locals
 
 
 def event_handler_decorator(channel_name: str, event_name: str):
-    """ Wrap a namkeo event handler """
+    """ Wrap a Namkeo event handler """
     def decorator_wrapper(function):
         """ Wrapper function for the decorator """
         @event_handler(channel_name, event_name)

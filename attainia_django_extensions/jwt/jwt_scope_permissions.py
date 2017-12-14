@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 
-from rest_framework import permissions, request
+from rest_framework import permissions
 from rest_framework.authentication import get_authorization_header
 
 from ..rpc.rpc_mixin import RpcMixin
@@ -12,6 +12,26 @@ from ..rpc.rpc_mixin import RpcMixin
 
 """
     http://www.django-rest-framework.org/api-guide/permissions/#custom-permissions
+
+    Required permissions are defined in the settings as view class mapped to a resource.
+    The actions are mapped to HTTP methods.
+
+        VIEW_PERMISSIONS = {
+            "SampleResourceViewSet": "example"
+        }
+
+    Example JWT with sample scopes.
+
+        {
+            "iss": "svcattainiaauth_api",
+            "aud": "svcattainia",
+            "iat": 1513269779,
+            "exp": 1513273379,
+            "sub": "a8a68e1f-4284-41e1-9f8b-70f7abc7247f",
+            "name": "superuser@attainia.com",
+            "scopes": "example:create example:read example:update example:delete"
+        }
+
 """
 class JwtScopePermission(permissions.BasePermission, RpcMixin):
     """ JWT Scope Permissions Class """

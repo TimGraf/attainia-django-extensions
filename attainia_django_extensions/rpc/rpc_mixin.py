@@ -23,6 +23,12 @@ class RpcMixin(object):
 
         MyClass(RpcMixin):
             ...
+
+
+    Requires the class and path to the provider of the RPC connection pool in the settings.
+
+        RPC_CONNECTION_POOL_PROVIDER = "django_nameko.get_pool"
+
     """
     logger = logging.getLogger(__name__)
     # Nameko Config is a simple dependency provider
