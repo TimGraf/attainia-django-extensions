@@ -18,3 +18,5 @@ Libraries used:
 [Django CID](https://github.com/snowball-one/cid)
 
 [Nameko](https://github.com/nameko/nameko)
+
+[Django Nameko](https://github.com/Attainia/django-nameko)
