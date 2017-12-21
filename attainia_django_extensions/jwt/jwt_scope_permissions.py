@@ -5,19 +5,10 @@ import logging
 from django.conf import settings
 
 from rest_framework import permissions
-from rest_framework.authentication import get_authorization_header
-
-from ..rpc.rpc_mixin import RpcMixin
 
 
 """
     http://www.django-rest-framework.org/api-guide/permissions/#custom-permissions
-
-    The Nameko RPC authorization service name and token validation method name are required
-    to be in the Django settings as well.
-
-        AUTH_SERVICE_NAME = "auth_service"
-        VALIDATE_TOKEN_METHOD = "validate_token"
 
     Required permissions are defined in the settings as view class mapped to a resource.
     The actions are mapped to HTTP methods.
@@ -40,7 +31,7 @@ from ..rpc.rpc_mixin import RpcMixin
         }
 
 """
-class JwtScopePermission(permissions.BasePermission, RpcMixin):
+class JwtScopePermission(permissions.BasePermission):
     """ JWT Scope Permissions Class """
     logger = logging.getLogger(__name__)
     message = "Required scope not found."
@@ -60,10 +51,7 @@ class JwtScopePermission(permissions.BasePermission, RpcMixin):
         self.logger.debug("JwtScopePermission.has_permission")
 
         try:
-            token = get_authorization_header(request).decode().split()[1]
-            self.logger.debug("Validating token: %s", token)
-
-            token_resp = self.call_service_method(self.auth_service_name, self.validate_token_method, False, token)
+            token_resp = request.user
             self.logger.debug("Token Response: %s", token_resp)
 
             return self._token_includes_scope(token_resp, view, request.method)

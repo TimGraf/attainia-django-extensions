@@ -18,6 +18,19 @@ from ..rpc.rpc_mixin import RpcMixin
         AUTH_SERVICE_NAME = "auth_service"
         VALIDATE_TOKEN_METHOD = "validate_token"
 
+    Example JWT with sample scopes.
+
+        {
+            "aud": "svcattainia",
+            "iss": "svcattainiaauth_api",
+            "iat": 1513269779,
+            "exp": 1513273379,
+            "sub": "a8a68e1f-4284-41e1-9f8b-70f7abc7247f",
+            "name": "superuser@attainia.com",
+            "org": "fc890cdc-e637-457d-805e-5495004f1654",
+            "scope": "example:create example:read example:update example:delete"
+        }
+
 """
 class JwtAuthentication(authentication.BaseAuthentication, RpcMixin):
     """ JWT Authentication Class """
@@ -35,11 +48,7 @@ class JwtAuthentication(authentication.BaseAuthentication, RpcMixin):
             token_resp = self.call_service_method(self.auth_service_name, self.validate_token_method, False, token)
             self.logger.debug("Token Response: %s", token_resp)
 
-            request.user = {
-                "id": token_resp["sub"],
-                "name": token_resp["name"],
-                "org": token_resp["org"]
-            }
+            request.user = token_resp
 
             if token_resp:
                 return (token_resp, token)
