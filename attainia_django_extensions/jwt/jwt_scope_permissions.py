@@ -63,7 +63,9 @@ class JwtScopePermission(permissions.BasePermission):
             token_resp = request.user
             self.logger.debug("Token Response: %s", token_resp)
 
-            if token_resp["role"] == settings.USER_ROLES["superuser"]:
+            role = getattr(token_resp, "role", "user")
+
+            if role == settings.USER_ROLES["superuser"]:
                 return True
 
             return self._token_includes_scope(token_resp, view, request.method)
@@ -74,7 +76,7 @@ class JwtScopePermission(permissions.BasePermission):
 
     def _token_includes_scope(self, token_response, view, method):
         view_class = None
-        scopes = token_response["scope"]
+        scopes = getattr(token_response, "scope", [])
 
         if inspect.isclass(view):
             view_class = view.__name__
