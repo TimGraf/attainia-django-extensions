@@ -35,7 +35,7 @@ from rest_framework import permissions
             "sub": "a8a68e1f-4284-41e1-9f8b-70f7abc7247f",
             "name": "superuser@attainia.com",
             "org": "fc890cdc-e637-457d-805e-5495004f1654",
-            "scope": "example:create example:read example:update example:delete"
+            "scope": "example:create example:read example:update example:delete",
             "role": "user"
         }
 
