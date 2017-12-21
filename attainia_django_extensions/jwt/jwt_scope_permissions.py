@@ -17,6 +17,14 @@ from rest_framework import permissions
             "SampleResourceViewSet": "example"
         }
 
+    Role names are configured in the Django settings.
+
+        USER_ROLES: {
+            "superuser": "superuser",
+            "user": "user"
+        }
+
+
     Example JWT with sample scopes.
 
         {
@@ -28,6 +36,7 @@ from rest_framework import permissions
             "name": "superuser@attainia.com",
             "org": "fc890cdc-e637-457d-805e-5495004f1654",
             "scope": "example:create example:read example:update example:delete"
+            "role": "user"
         }
 
 """
@@ -54,6 +63,9 @@ class JwtScopePermission(permissions.BasePermission):
             token_resp = request.user
             self.logger.debug("Token Response: %s", token_resp)
 
+            if token_resp["role"] == settings.USER_ROLES["superuser"]:
+                return True
+
             return self._token_includes_scope(token_resp, view, request.method)
 
         except Exception as ex:
@@ -68,10 +80,6 @@ class JwtScopePermission(permissions.BasePermission):
             view_class = view.__name__
         else:
             view_class = view.__class__.__name__
-
-        if "superuser" in scopes:
-            self.logger.debug("Super user access, user ID: %s, view: %s", token_response["sub"], view_class)
-            return True
 
         resource = settings.VIEW_PERMISSIONS.get(view_class, "example")
         action = self.method_actions.get(method)
