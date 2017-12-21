@@ -63,7 +63,7 @@ class JwtScopePermission(permissions.BasePermission):
             token_resp = request.user
             self.logger.debug("Token Response: %s", token_resp)
 
-            role = getattr(token_resp, "role", "user")
+            role = token_resp.get("role", "user")
 
             self.logger.debug("role: %s", role)
 
@@ -78,7 +78,7 @@ class JwtScopePermission(permissions.BasePermission):
 
     def _token_includes_scope(self, token_response, view, method):
         view_class = None
-        scopes = getattr(token_response, "scope", [])
+        scopes = token_response.get("scope", [])
 
         self.logger.debug("scopes: %s", scopes)
 
