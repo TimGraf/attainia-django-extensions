@@ -5,9 +5,6 @@ import logging
 from django.conf import settings
 
 from rest_framework import permissions
-from rest_framework.authentication import get_authorization_header
-
-from ..rpc.rpc_mixin import RpcMixin
 
 
 """
@@ -20,20 +17,30 @@ from ..rpc.rpc_mixin import RpcMixin
             "SampleResourceViewSet": "example"
         }
 
+    Role names are configured in the Django settings.
+
+        USER_ROLES: {
+            "superuser": "superuser",
+            "user": "user"
+        }
+
+
     Example JWT with sample scopes.
 
         {
-            "iss": "svcattainiaauth_api",
             "aud": "svcattainia",
+            "iss": "svcattainiaauth_api",
             "iat": 1513269779,
             "exp": 1513273379,
             "sub": "a8a68e1f-4284-41e1-9f8b-70f7abc7247f",
             "name": "superuser@attainia.com",
-            "scopes": "example:create example:read example:update example:delete"
+            "org": "fc890cdc-e637-457d-805e-5495004f1654",
+            "scope": "example:create example:read example:update example:delete",
+            "role": "user"
         }
 
 """
-class JwtScopePermission(permissions.BasePermission, RpcMixin):
+class JwtScopePermission(permissions.BasePermission):
     """ JWT Scope Permissions Class """
     logger = logging.getLogger(__name__)
     message = "Required scope not found."
@@ -46,21 +53,24 @@ class JwtScopePermission(permissions.BasePermission, RpcMixin):
         "OPTIONS": "read",
         "HEAD": "read"
     }
+    auth_service_name = settings.AUTH_SERVICE_NAME
+    validate_token_method = settings.VALIDATE_TOKEN_METHOD
 
     def has_permission(self, request, view):
         self.logger.debug("JwtScopePermission.has_permission")
 
         try:
-            token: str = get_authorization_header(request).decode().split()[1]
-            self.logger.debug("Validating token: %s", token)
-
-            token_resp = self.call_service_method("auth_service", "validate_token", False, token)
+            token_resp = request.user
             self.logger.debug("Token Response: %s", token_resp)
 
-            if self._token_includes_scope(token_resp, view, request.method):
+            role = token_resp.get("role", "user")
+
+            self.logger.debug("role: %s", role)
+
+            if role == settings.USER_ROLES["superuser"]:
                 return True
-            else:
-                return False
+
+            return self._token_includes_scope(token_resp, view, request.method)
 
         except Exception as ex:
             self.logger.warning("Permissions failed with error %s", getattr(ex, 'message', repr(ex)))
@@ -68,7 +78,9 @@ class JwtScopePermission(permissions.BasePermission, RpcMixin):
 
     def _token_includes_scope(self, token_response, view, method):
         view_class = None
-        scopes = token_response["scopes"]
+        scopes = token_response.get("scope", [])
+
+        self.logger.debug("scopes: %s", scopes)
 
         if inspect.isclass(view):
             view_class = view.__name__
