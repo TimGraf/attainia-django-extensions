@@ -9,6 +9,10 @@ from rest_framework.response import Response
 from .rpc_mixin import RpcMixin
 
 
+def querydict_to_dict(querydict):
+    return {k: v[0] if len(v) == 1 else v for k, v in querydict.lists()}
+
+
 class RpcDrfMixin(object):
     """
     Provides common DRF ViewSet-like abstractions for interacting with models
