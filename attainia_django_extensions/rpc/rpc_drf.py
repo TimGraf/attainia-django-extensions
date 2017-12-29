@@ -9,6 +9,9 @@ from rest_framework.response import Response
 from .rpc_mixin import RpcMixin
 
 
+VALIDATION_ERRORS_KEY = "validation_errors"
+
+
 def querydict_to_dict(querydict):
     return {k: v[0] if len(v) == 1 else v for k, v in querydict.lists()}
 
@@ -89,7 +92,7 @@ class RpcDrfMixin(object):
         serializer = self.get_serializer(data=kwargs)
 
         if not serializer.is_valid():
-            return {"validation_errors": serializer.errors}
+            return {VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
@@ -118,7 +121,7 @@ class RpcDrfMixin(object):
         serializer = self.get_serializer(instance, data=kwargs, partial=partial)
 
         if not serializer.is_valid():
-            return {"validation_errors": serializer.errors}
+            return {VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
@@ -175,7 +178,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **request.data
         )
 
-        if "validation_errors" in resp.keys():
+        if VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp, status=status_code)
@@ -192,7 +195,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"pk": pk}, **request_data}
         )
 
-        if "validation_errors" in resp.keys():
+        if VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp, status=status_code)
