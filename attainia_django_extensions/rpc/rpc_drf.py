@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from rest_framework import status, viewsets
@@ -10,6 +11,9 @@ from .rpc_mixin import RpcMixin
 
 
 VALIDATION_ERRORS_KEY = "validation_errors"
+ERRORS_KEY = "errors"
+OBJ_NOT_FOUND_KEY = "not_found"
+OBJ_NOT_FOUND_ERROR_VALUE = "No object found with that ID"
 
 
 def querydict_to_dict(querydict):
@@ -111,13 +115,22 @@ class RpcDrfMixin(object):
         return serializer.data
 
     def retrieve(self, *args, **kwargs):
-        instance = self.get_object(**kwargs)
+        try:
+            instance = self.get_object(**kwargs)
+        except ObjectDoesNotExist:
+            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+
         serializer = self.get_serializer(instance)
         return serializer.data
 
     def update(self, *args, **kwargs):
         partial = kwargs.pop("partial", False)
-        instance = self.get_object(**kwargs)
+
+        try:
+            instance = self.get_object(**kwargs)
+        except ObjectDoesNotExist:
+            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+
         serializer = self.get_serializer(instance, data=kwargs, partial=partial)
 
         if not serializer.is_valid():
@@ -166,6 +179,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"pk": pk}, **params},
         )
 
+        if ERRORS_KEY in resp.keys():
+            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_404_NOT_FOUND
+
         return Response(resp, status=status_code)
 
     def create(self, request, *args, **kwargs):
@@ -194,6 +211,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             False,
             **{**{"pk": pk}, **request_data}
         )
+
+        if ERRORS_KEY in resp.keys():
+            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_404_NOT_FOUND
 
         if VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
