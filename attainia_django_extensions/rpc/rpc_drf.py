@@ -8,6 +8,7 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 from .rpc_mixin import RpcMixin
+from .rpc_view import APIView
 
 
 VALIDATION_ERRORS_KEY = "validation_errors"
@@ -20,7 +21,7 @@ def querydict_to_dict(querydict):
     return {k: v[0] if len(v) == 1 else v for k, v in querydict.lists()}
 
 
-class RpcDrfMixin(object):
+class RpcDrfMixin(APIView):
     """
     Provides common DRF ViewSet-like abstractions for interacting with models
     and serializers via RPC.
@@ -92,6 +93,7 @@ class RpcDrfMixin(object):
             })
         ])
 
+    @APIView.auth
     def create(self, *args, **kwargs):
         serializer = self.get_serializer(data=kwargs)
 
@@ -101,6 +103,7 @@ class RpcDrfMixin(object):
         serializer.save()
         return serializer.data
 
+    @APIView.auth
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
         page_num = kwargs.pop("page", 1)
@@ -114,6 +117,7 @@ class RpcDrfMixin(object):
         serializer = self.get_serializer(queryset, many=True, *args, **kwargs)
         return serializer.data
 
+    @APIView.auth
     def retrieve(self, *args, **kwargs):
         try:
             instance = self.get_object(**kwargs)
@@ -123,6 +127,7 @@ class RpcDrfMixin(object):
         serializer = self.get_serializer(instance)
         return serializer.data
 
+    @APIView.auth
     def update(self, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 

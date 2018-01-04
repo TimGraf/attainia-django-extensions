@@ -49,8 +49,6 @@ class JwtAuthentication(authentication.BaseAuthentication, RpcMixin):
             token_resp = self.call_service_method(self.auth_service_name, self.validate_token_method, False, token)
             self.logger.debug("Token Response: %s", token_resp)
 
-            request.user = token_resp
-
             if token_resp:
                 return (token_resp, token)
             else:
