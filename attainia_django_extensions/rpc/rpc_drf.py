@@ -189,6 +189,12 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **params},
         )
 
+        if ERRORS_KEY in resp.keys():
+            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_401_UNAUTHORIZED
+            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_403_FORBIDDEN
+
         return Response(resp, status=status_code)
 
     def retrieve(self, request, pk, *args, **kwargs):
@@ -206,6 +212,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         if ERRORS_KEY in resp.keys():
             if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
                 status_code = status.HTTP_404_NOT_FOUND
+            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_401_UNAUTHORIZED
+            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_403_FORBIDDEN
 
         return Response(resp, status=status_code)
 
@@ -218,6 +228,12 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             False,
             **{**{"jwt": jwt}, **request.data}
         )
+
+        if ERRORS_KEY in resp.keys():
+            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_401_UNAUTHORIZED
+            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_403_FORBIDDEN
 
         if VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
@@ -240,6 +256,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         if ERRORS_KEY in resp.keys():
             if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
                 status_code = status.HTTP_404_NOT_FOUND
+            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_401_UNAUTHORIZED
+            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
+                status_code = status.HTTP_403_FORBIDDEN
 
         if VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST

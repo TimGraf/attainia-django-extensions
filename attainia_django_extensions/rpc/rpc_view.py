@@ -9,8 +9,10 @@ class RpcView(object):
 
     # Auth errors
     ERRORS_KEY = "errors"
-    NOT_AUTHENTICATED = "not_authenticated"
-    NOT_AUTHORIZED = "not_authorized"
+    NOT_AUTHENTICATED_KEY = "not_authenticated"
+    NOT_AUTHENTICATED_VALUE = "User not authorized."
+    NOT_AUTHORIZED_KEY = "not_authorized"
+    NOT_AUTHORIZED_VALUE = "User not authenticated."
 
     # The following policies may be set  per-view.
     authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
@@ -81,13 +83,13 @@ class RpcView(object):
             try:
                 user_auth_tuple = authenticator.authenticate(self.request)
             except exceptions.APIException:
-                return {self.ERRORS_KEY, self.NOT_AUTHENTICATED}
+                return {self.ERRORS_KEY: {self.NOT_AUTHENTICATED_KEY: self.NOT_AUTHENTICATED_VALUE}}
 
             if user_auth_tuple is not None:
                 self.request.user, self.request.auth = user_auth_tuple
                 return
 
-        return {self.ERRORS_KEY, self.NOT_AUTHENTICATED}
+        return {self.ERRORS_KEY: {self.NOT_AUTHENTICATED_KEY: self.NOT_AUTHENTICATED_VALUE}}
 
     def check_permissions(self):
         """
