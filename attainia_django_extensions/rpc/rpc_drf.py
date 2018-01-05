@@ -186,7 +186,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "list",
             False,
-            **{**{"jwt", jwt}, **params},
+            **{**{"jwt": jwt}, **params},
         )
 
         return Response(resp, status=status_code)
@@ -200,7 +200,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "retrieve",
             False,
-            **{**{"jwt", jwt}, **{"pk": pk}, **params},
+            **{**{"jwt": jwt}, **{"pk": pk}, **params},
         )
 
         if ERRORS_KEY in resp.keys():
@@ -216,7 +216,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "create",
             False,
-            **{**{"jwt", jwt}, **request.data}
+            **{**{"jwt": jwt}, **request.data}
         )
 
         if VALIDATION_ERRORS_KEY in resp.keys():
@@ -234,7 +234,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "update",
             False,
-            **{**{"jwt", jwt}, **{"pk": pk}, **request_data}
+            **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
 
         if ERRORS_KEY in resp.keys():
