@@ -77,7 +77,7 @@ class APIView(object):
         will instead be performed lazily, the first time either
         `request.user` or `request.auth` is accessed.
         """
-        for authenticator in self.authentication_classes:
+        for authenticator in self.get_authenticators():
             try:
                 user_auth_tuple = authenticator.authenticate(self.request)
             except exceptions.APIException:
