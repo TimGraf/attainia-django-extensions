@@ -5,7 +5,7 @@ from rest_framework import exceptions
 from rest_framework.settings import api_settings
 
 
-class APIView(object):
+class RpcView(object):
 
     # Auth errors
     ERRORS_KEY = "errors"
