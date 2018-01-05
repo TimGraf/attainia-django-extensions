@@ -20,11 +20,12 @@ class APIView(object):
     settings = api_settings
 
     # Creating a mock request object to keep permissions and authorization classes interchangable with DRF.
-    request = {
-        "user": None,
-        "auth": None,
-        "META": None,
-    }
+    class Request:
+        user = None
+        auth = None
+        META = None
+
+    request = Request()
 
 
     @classmethod
