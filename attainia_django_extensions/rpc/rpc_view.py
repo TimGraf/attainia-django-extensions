@@ -25,6 +25,7 @@ class RpcView(object):
     class Request:
         user = None
         auth = None
+        method = None
         META = None
 
     request = Request()
@@ -40,6 +41,14 @@ class RpcView(object):
             self.request.META = {
                 "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
             }
+            method = {
+                "list": "GET",
+                "retrieve": "GET",
+                "create": "POST",
+                "update": "PUT",
+                "partial_update": "PATCH"
+            }.get(function.__name__, "GET")
+            self.request.method = method
             # Perfrom the authentication and authorization
             auth_res = self.perform_authentication()
             perm_res = self.check_permissions()
