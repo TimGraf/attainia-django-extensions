@@ -189,11 +189,12 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **params},
         )
 
-        if ERRORS_KEY in resp.keys():
-            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_401_UNAUTHORIZED
-            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_403_FORBIDDEN
+        if resp:
+            if ERRORS_KEY in resp.keys():
+                if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
+                    status_code = status.HTTP_401_UNAUTHORIZED
+                if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
+                    status_code = status.HTTP_403_FORBIDDEN
 
         return Response(resp, status=status_code)
 
