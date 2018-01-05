@@ -94,7 +94,7 @@ class RpcDrfMixin(RpcView):
             })
         ])
 
-    @APIView.auth
+    @RpcView.auth
     def create(self, *args, **kwargs):
         serializer = self.get_serializer(data=kwargs)
 
@@ -104,7 +104,7 @@ class RpcDrfMixin(RpcView):
         serializer.save()
         return serializer.data
 
-    @APIView.auth
+    @RpcView.auth
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
         page_num = kwargs.pop("page", 1)
@@ -118,7 +118,7 @@ class RpcDrfMixin(RpcView):
         serializer = self.get_serializer(queryset, many=True, *args, **kwargs)
         return serializer.data
 
-    @APIView.auth
+    @RpcView.auth
     def retrieve(self, *args, **kwargs):
         try:
             instance = self.get_object(**kwargs)
@@ -128,7 +128,7 @@ class RpcDrfMixin(RpcView):
         serializer = self.get_serializer(instance)
         return serializer.data
 
-    @APIView.auth
+    @RpcView.auth
     def update(self, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
