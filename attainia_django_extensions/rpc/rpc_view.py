@@ -98,6 +98,6 @@ class RpcView(object):
         """
         for permission in self.get_permissions():
             if not permission.has_permission(self.request, self):
-                return {self.ERRORS_KEY, self.NOT_AUTHORIZED}
+                return {self.ERRORS_KEY: {self.NOT_AUTHORIZED_KEY: self.NOT_AUTHORIZED_VALUE}}
 
         return
