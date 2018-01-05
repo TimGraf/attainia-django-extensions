@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, exceptions
 from rest_framework.authentication import get_authorization_header
 from rest_framework.response import Response
 
@@ -154,6 +154,17 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     rpc_service_name = None
 
+    def _getJwt(self, request):
+        jwt = None
+
+        try:
+            jwt = get_authorization_header(request).decode().split()[1]
+        except Exception as ex:
+            raise exceptions.AuthenticationFailed()
+
+        return jwt
+
+
     def get_rpc_service_name(self):
         assert self.rpc_service_name is not None, (
             "'%s' should either include a `rpc_service_name` attribute, "
@@ -166,7 +177,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def list(self, request, *args, **kwargs):
         status_code = status.HTTP_200_OK
-        jwt = get_authorization_header(request).decode().split()[1]
+        jwt = self._getJwt(request)
 
 
         params = querydict_to_dict(request.query_params)
@@ -182,7 +193,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def retrieve(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
-        jwt = get_authorization_header(request).decode().split()[1]
+        jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
 
         resp = self.call_service_method(
@@ -200,7 +211,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def create(self, request, *args, **kwargs):
         status_code = status.HTTP_201_CREATED
-        jwt = get_authorization_header(request).decode().split()[1]
+        jwt = self._getJwt(request)
         resp = self.call_service_method(
             self.get_rpc_service_name(),
             "create",
@@ -215,7 +226,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def update(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
-        jwt = get_authorization_header(request).decode().split()[1]
+        jwt = self._getJwt(request)
         request_data = request.data
         request_data["partial"] = kwargs.pop("partial", False)
 
