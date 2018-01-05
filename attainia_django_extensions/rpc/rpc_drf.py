@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from rest_framework import status, viewsets
+from rest_framework.authentication import get_authorization_header
 from rest_framework.response import Response
 
 from .rpc_mixin import RpcMixin
@@ -165,6 +166,8 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def list(self, request, *args, **kwargs):
         status_code = status.HTTP_200_OK
+        jwt = get_authorization_header(request).decode().split()[1]
+
 
         params = querydict_to_dict(request.query_params)
 
@@ -172,21 +175,21 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "list",
             False,
-            **params,
+            **{**{"jwt", jwt}, **params},
         )
 
         return Response(resp, status=status_code)
 
     def retrieve(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
-
+        jwt = get_authorization_header(request).decode().split()[1]
         params = querydict_to_dict(request.query_params)
 
         resp = self.call_service_method(
             self.get_rpc_service_name(),
             "retrieve",
             False,
-            **{**{"pk": pk}, **params},
+            **{**{"jwt", jwt}, **{"pk": pk}, **params},
         )
 
         if ERRORS_KEY in resp.keys():
@@ -197,12 +200,12 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def create(self, request, *args, **kwargs):
         status_code = status.HTTP_201_CREATED
-
+        jwt = get_authorization_header(request).decode().split()[1]
         resp = self.call_service_method(
             self.get_rpc_service_name(),
             "create",
             False,
-            **request.data
+            **{**{"jwt", jwt}, **request.data}
         )
 
         if VALIDATION_ERRORS_KEY in resp.keys():
@@ -212,6 +215,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     def update(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
+        jwt = get_authorization_header(request).decode().split()[1]
         request_data = request.data
         request_data["partial"] = kwargs.pop("partial", False)
 
@@ -219,7 +223,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             self.get_rpc_service_name(),
             "update",
             False,
-            **{**{"pk": pk}, **request_data}
+            **{**{"jwt", jwt}, **{"pk": pk}, **request_data}
         )
 
         if ERRORS_KEY in resp.keys():

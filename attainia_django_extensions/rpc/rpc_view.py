@@ -19,7 +19,7 @@ class APIView(object):
     # Allow dependency injection of other settings to make testing easier.
     settings = api_settings
 
-    # Creating a mock request object to keep permissions class and authorization class interchangable with DRF.
+    # Creating a mock request object to keep permissions and authorization classes interchangable with DRF.
     request = {}
 
 
@@ -28,6 +28,12 @@ class APIView(object):
         """ Authorization and Authentication decorator """
         def wrapper(self, *args, **kwargs):
             """ Decorator wrapping function """
+            # Put the JWT on the mock request for the auth and permissions classes
+            jwt = kwargs.pop("jwt", None)
+            self.request.META = {
+                "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
+            }
+            # Perfrom the authentication and authorization
             auth_res = self.perform_authentication()
             perm_res = self.check_permissions()
 
