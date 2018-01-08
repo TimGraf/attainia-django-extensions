@@ -8,14 +8,10 @@ from rest_framework import status, viewsets, exceptions
 from rest_framework.authentication import get_authorization_header
 from rest_framework.response import Response
 
+from . import rpc_errors
 from .rpc_mixin import RpcMixin
 from .rpc_view import RpcView
-
-
-VALIDATION_ERRORS_KEY = "validation_errors"
-ERRORS_KEY = "errors"
-OBJ_NOT_FOUND_KEY = "not_found"
-OBJ_NOT_FOUND_ERROR_VALUE = "No object found with that ID"
+from .rpc_decorator import rpc_error_handler
 
 
 def querydict_to_dict(querydict):
@@ -99,7 +95,7 @@ class RpcDrfMixin(RpcView):
         serializer = self.get_serializer(data=kwargs)
 
         if not serializer.is_valid():
-            return {VALIDATION_ERRORS_KEY: serializer.errors}
+            return {rpc_errors.VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
@@ -123,7 +119,7 @@ class RpcDrfMixin(RpcView):
         try:
             instance = self.get_object(**kwargs)
         except ObjectDoesNotExist:
-            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
 
         serializer = self.get_serializer(instance)
         return serializer.data
@@ -135,12 +131,12 @@ class RpcDrfMixin(RpcView):
         try:
             instance = self.get_object(**kwargs)
         except ObjectDoesNotExist:
-            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
 
         serializer = self.get_serializer(instance, data=kwargs, partial=partial)
 
         if not serializer.is_valid():
-            return {VALIDATION_ERRORS_KEY: serializer.errors}
+            return {rpc_errors.VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
@@ -175,28 +171,31 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         rpc_service_name = self.rpc_service_name
         return rpc_service_name
 
-    def list(self, request, *args, **kwargs):
+    def _handle_rpc_error(self, resp):
         status_code = status.HTTP_200_OK
-        jwt = self._getJwt(request)
 
+        if rpc_errors.OBJ_NOT_FOUND_KEY in resp[rpc_errors.ERRORS_KEY]:
+            status_code = status.HTTP_404_NOT_FOUND
+        if rpc_errors.NOT_AUTHENTICATED_KEY in resp[rpc_errors.ERRORS_KEY]:
+            status_code = status.HTTP_401_UNAUTHORIZED
+        if rpc_errors.NOT_AUTHORIZED_KEY in resp[rpc_errors.ERRORS_KEY]:
+            status_code = status.HTTP_403_FORBIDDEN
+
+        return status_code
+
+    @rpc_error_handler
+    def list(self, request, *args, **kwargs):
+        jwt = self._getJwt(request)
 
         params = querydict_to_dict(request.query_params)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "list",
             False,
             **{**{"jwt": jwt}, **params},
         )
 
-        if resp:
-            if ERRORS_KEY in resp.keys():
-                if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
-                    status_code = status.HTTP_401_UNAUTHORIZED
-                if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
-                    status_code = status.HTTP_403_FORBIDDEN
-
-        return Response(resp, status=status_code)
 
     def retrieve(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
@@ -210,13 +209,8 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **{"pk": pk}, **params},
         )
 
-        if ERRORS_KEY in resp.keys():
-            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_404_NOT_FOUND
-            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_401_UNAUTHORIZED
-            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_403_FORBIDDEN
+        if rpc_errors.ERRORS_KEY in resp.keys():
+            self._handle_rpc_error(resp)
 
         return Response(resp, status=status_code)
 
@@ -230,13 +224,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **request.data}
         )
 
-        if ERRORS_KEY in resp.keys():
-            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_401_UNAUTHORIZED
-            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_403_FORBIDDEN
+        if rpc_errors.ERRORS_KEY in resp.keys():
+            self._handle_rpc_error(resp)
 
-        if VALIDATION_ERRORS_KEY in resp.keys():
+        if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp, status=status_code)
@@ -254,15 +245,10 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
 
-        if ERRORS_KEY in resp.keys():
-            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_404_NOT_FOUND
-            if RpcView.NOT_AUTHENTICATED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_401_UNAUTHORIZED
-            if RpcView.NOT_AUTHORIZED_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_403_FORBIDDEN
+        if rpc_errors.ERRORS_KEY in resp.keys():
+            self._handle_rpc_error(resp)
 
-        if VALIDATION_ERRORS_KEY in resp.keys():
+        if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
             status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp, status=status_code)

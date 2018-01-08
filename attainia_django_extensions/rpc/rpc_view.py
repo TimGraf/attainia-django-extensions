@@ -4,16 +4,10 @@ Provides an RPCView class that is the base of all views in the RPC framework.
 from rest_framework import exceptions
 from rest_framework.settings import api_settings
 
+from . import rpc_errors
+
 
 class RpcView(object):
-
-    # Auth errors
-    ERRORS_KEY = "errors"
-    NOT_AUTHENTICATED_KEY = "not_authenticated"
-    NOT_AUTHENTICATED_VALUE = "User not authorized."
-    NOT_AUTHORIZED_KEY = "not_authorized"
-    NOT_AUTHORIZED_VALUE = "User not authenticated."
-
     # The following policies may be set  per-view.
     authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
     permission_classes = api_settings.DEFAULT_PERMISSION_CLASSES
@@ -31,25 +25,30 @@ class RpcView(object):
     request = Request()
 
 
+    def _put_jwt_on_auth_header(self, kwargs):
+        jwt = kwargs.pop("jwt", None)
+        self.request.META = {
+            "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
+        }
+
+    def _set_request_method(self, function_name):
+        method = {
+            "list": "GET",
+            "retrieve": "GET",
+            "create": "POST",
+            "update": "PUT",
+            "partial_update": "PATCH"
+        }.get(function_name, "GET")
+        self.request.method = method
+
     @classmethod
     def auth(cls, function):
         """ Authorization and Authentication decorator """
         def wrapper(self, *args, **kwargs):
             """ Decorator wrapping function """
-            # Put the JWT on the mock request for the auth and permissions classes
-            jwt = kwargs.pop("jwt", None)
-            self.request.META = {
-                "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
-            }
-            method = {
-                "list": "GET",
-                "retrieve": "GET",
-                "create": "POST",
-                "update": "PUT",
-                "partial_update": "PATCH"
-            }.get(function.__name__, "GET")
-            self.request.method = method
-            # Perfrom the authentication and authorization
+            self._put_jwt_on_auth_header(kwargs)
+            self._set_request_method(function.__name__)
+            # Perform the authentication and authorization
             auth_res = self.perform_authentication()
             perm_res = self.check_permissions()
 
@@ -92,13 +91,13 @@ class RpcView(object):
             try:
                 user_auth_tuple = authenticator.authenticate(self.request)
             except exceptions.APIException:
-                return {self.ERRORS_KEY: {self.NOT_AUTHENTICATED_KEY: self.NOT_AUTHENTICATED_VALUE}}
+                return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
             if user_auth_tuple is not None:
                 self.request.user, self.request.auth = user_auth_tuple
                 return
 
-        return {self.ERRORS_KEY: {self.NOT_AUTHENTICATED_KEY: self.NOT_AUTHENTICATED_VALUE}}
+        return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
     def check_permissions(self):
         """
@@ -107,6 +106,6 @@ class RpcView(object):
         """
         for permission in self.get_permissions():
             if not permission.has_permission(self.request, self):
-                return {self.ERRORS_KEY: {self.NOT_AUTHORIZED_KEY: self.NOT_AUTHORIZED_VALUE}}
+                return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHORIZED_KEY: rpc_errors.NOT_AUTHORIZED_VALUE}}
 
         return
