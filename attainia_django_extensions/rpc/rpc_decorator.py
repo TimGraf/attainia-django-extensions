@@ -37,7 +37,7 @@ def rpc_error_handler(function):
     """ Wrap RpcDrfViewSet methods to handle RPC errors and return appropriate HTTP response codes.
 
         Methods like: list, retrieve, update, create, and delete, which require potentially handling
-        RPC errors and translatinf those into HTTP status codes.
+        RPC errors and translating those into HTTP status codes.
     """
 
     def wrapper(self, *args, **kwargs):
