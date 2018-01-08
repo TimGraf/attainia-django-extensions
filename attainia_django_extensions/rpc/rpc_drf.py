@@ -4,9 +4,8 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from rest_framework import status, viewsets, exceptions
+from rest_framework import viewsets, exceptions
 from rest_framework.authentication import get_authorization_header
-from rest_framework.response import Response
 
 from . import rpc_errors
 from .rpc_mixin import RpcMixin
@@ -171,18 +170,6 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         rpc_service_name = self.rpc_service_name
         return rpc_service_name
 
-    def _handle_rpc_error(self, resp):
-        status_code = status.HTTP_200_OK
-
-        if rpc_errors.OBJ_NOT_FOUND_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_404_NOT_FOUND
-        if rpc_errors.NOT_AUTHENTICATED_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_401_UNAUTHORIZED
-        if rpc_errors.NOT_AUTHORIZED_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_403_FORBIDDEN
-
-        return status_code
-
     @rpc_error_handler
     def list(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
@@ -195,61 +182,41 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **params},
         )
 
+    @rpc_error_handler
     def retrieve(self, request, pk, *args, **kwargs):
-        status_code = status.HTTP_200_OK
         jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "retrieve",
             False,
             **{**{"jwt": jwt}, **{"pk": pk}, **params},
         )
 
-        if rpc_errors.ERRORS_KEY in resp.keys():
-            self._handle_rpc_error(resp)
-
-        return Response(resp, status=status_code)
-
+    @rpc_error_handler
     def create(self, request, *args, **kwargs):
-        status_code = status.HTTP_201_CREATED
         jwt = self._getJwt(request)
-        resp = self.call_service_method(
+
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "create",
             False,
             **{**{"jwt": jwt}, **request.data}
         )
 
-        if rpc_errors.ERRORS_KEY in resp.keys():
-            self._handle_rpc_error(resp)
-
-        if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        return Response(resp, status=status_code)
-
+    @rpc_error_handler
     def update(self, request, pk, *args, **kwargs):
-        status_code = status.HTTP_200_OK
         jwt = self._getJwt(request)
         request_data = request.data
         request_data["partial"] = kwargs.pop("partial", False)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "update",
             False,
             **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
-
-        if rpc_errors.ERRORS_KEY in resp.keys():
-            self._handle_rpc_error(resp)
-
-        if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        return Response(resp, status=status_code)
 
     def partial_update(self, request, pk, *args, **kwargs):
         kwargs["partial"] = True
