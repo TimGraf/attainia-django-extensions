@@ -186,7 +186,6 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
     @rpc_error_handler
     def list(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
-
         params = querydict_to_dict(request.query_params)
 
         return self.call_service_method(
@@ -195,7 +194,6 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             False,
             **{**{"jwt": jwt}, **params},
         )
-
 
     def retrieve(self, request, pk, *args, **kwargs):
         status_code = status.HTTP_200_OK
