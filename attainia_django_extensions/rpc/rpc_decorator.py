@@ -45,11 +45,12 @@ def rpc_error_handler(function):
         status_code = status.HTTP_201_CREATED if function.__name__ == "create" else status.HTTP_200_OK
         resp = function(self, *args, **kwargs)
 
-        if rpc_errors.ERRORS_KEY in resp.keys():
-            status_code = handle_rpc_error(resp)
+        if resp:
+            if rpc_errors.ERRORS_KEY in resp.keys():
+                status_code = handle_rpc_error(resp)
 
-        if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
-            status_code = status.HTTP_400_BAD_REQUEST
+            if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
+                status_code = status.HTTP_400_BAD_REQUEST
 
         return Response(resp, status=status_code)
 
