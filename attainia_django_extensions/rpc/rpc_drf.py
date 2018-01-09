@@ -4,23 +4,20 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from rest_framework import status, viewsets
-from rest_framework.response import Response
+from rest_framework import viewsets, exceptions
+from rest_framework.authentication import get_authorization_header
 
+from . import rpc_errors
 from .rpc_mixin import RpcMixin
-
-
-VALIDATION_ERRORS_KEY = "validation_errors"
-ERRORS_KEY = "errors"
-OBJ_NOT_FOUND_KEY = "not_found"
-OBJ_NOT_FOUND_ERROR_VALUE = "No object found with that ID"
+from .rpc_view import RpcView
+from .rpc_decorator import rpc_error_handler
 
 
 def querydict_to_dict(querydict):
     return {k: v[0] if len(v) == 1 else v for k, v in querydict.lists()}
 
 
-class RpcDrfMixin(object):
+class RpcDrfMixin(RpcView):
     """
     Provides common DRF ViewSet-like abstractions for interacting with models
     and serializers via RPC.
@@ -92,15 +89,17 @@ class RpcDrfMixin(object):
             })
         ])
 
+    @RpcView.auth
     def create(self, *args, **kwargs):
         serializer = self.get_serializer(data=kwargs)
 
         if not serializer.is_valid():
-            return {VALIDATION_ERRORS_KEY: serializer.errors}
+            return {rpc_errors.VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
 
+    @RpcView.auth
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
         page_num = kwargs.pop("page", 1)
@@ -114,27 +113,29 @@ class RpcDrfMixin(object):
         serializer = self.get_serializer(queryset, many=True, *args, **kwargs)
         return serializer.data
 
+    @RpcView.auth
     def retrieve(self, *args, **kwargs):
         try:
             instance = self.get_object(**kwargs)
         except ObjectDoesNotExist:
-            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
 
         serializer = self.get_serializer(instance)
         return serializer.data
 
+    @RpcView.auth
     def update(self, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
         try:
             instance = self.get_object(**kwargs)
         except ObjectDoesNotExist:
-            return {ERRORS_KEY: {OBJ_NOT_FOUND_KEY: OBJ_NOT_FOUND_ERROR_VALUE}}
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
 
         serializer = self.get_serializer(instance, data=kwargs, partial=partial)
 
         if not serializer.is_valid():
-            return {VALIDATION_ERRORS_KEY: serializer.errors}
+            return {rpc_errors.VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
         return serializer.data
@@ -148,6 +149,17 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
     rpc_service_name = None
 
+    def _getJwt(self, request):
+        jwt = None
+
+        try:
+            jwt = get_authorization_header(request).decode().split()[1]
+        except Exception as ex:
+            raise exceptions.AuthenticationFailed()
+
+        return jwt
+
+
     def get_rpc_service_name(self):
         assert self.rpc_service_name is not None, (
             "'%s' should either include a `rpc_service_name` attribute, "
@@ -158,73 +170,53 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         rpc_service_name = self.rpc_service_name
         return rpc_service_name
 
+    @rpc_error_handler
     def list(self, request, *args, **kwargs):
-        status_code = status.HTTP_200_OK
-
+        jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "list",
             False,
-            **params,
+            **{**{"jwt": jwt}, **params},
         )
 
-        return Response(resp, status=status_code)
-
+    @rpc_error_handler
     def retrieve(self, request, pk, *args, **kwargs):
-        status_code = status.HTTP_200_OK
-
+        jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "retrieve",
             False,
-            **{**{"pk": pk}, **params},
+            **{**{"jwt": jwt}, **{"pk": pk}, **params},
         )
 
-        if ERRORS_KEY in resp.keys():
-            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_404_NOT_FOUND
-
-        return Response(resp, status=status_code)
-
+    @rpc_error_handler
     def create(self, request, *args, **kwargs):
-        status_code = status.HTTP_201_CREATED
+        jwt = self._getJwt(request)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "create",
             False,
-            **request.data
+            **{**{"jwt": jwt}, **request.data}
         )
 
-        if VALIDATION_ERRORS_KEY in resp.keys():
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        return Response(resp, status=status_code)
-
+    @rpc_error_handler
     def update(self, request, pk, *args, **kwargs):
-        status_code = status.HTTP_200_OK
+        jwt = self._getJwt(request)
         request_data = request.data
         request_data["partial"] = kwargs.pop("partial", False)
 
-        resp = self.call_service_method(
+        return self.call_service_method(
             self.get_rpc_service_name(),
             "update",
             False,
-            **{**{"pk": pk}, **request_data}
+            **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
-
-        if ERRORS_KEY in resp.keys():
-            if OBJ_NOT_FOUND_KEY in resp[ERRORS_KEY]:
-                status_code = status.HTTP_404_NOT_FOUND
-
-        if VALIDATION_ERRORS_KEY in resp.keys():
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        return Response(resp, status=status_code)
 
     def partial_update(self, request, pk, *args, **kwargs):
         kwargs["partial"] = True
