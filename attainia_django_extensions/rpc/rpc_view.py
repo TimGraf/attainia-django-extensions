@@ -90,7 +90,7 @@ class RpcView(object):
         for authenticator in self.get_authenticators():
             try:
                 user_auth_tuple = authenticator.authenticate(self.request)
-            except exceptions.APIException:
+            except Exception as ex:
                 return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
             if user_auth_tuple is not None:
