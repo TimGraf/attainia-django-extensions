@@ -52,10 +52,10 @@ class RpcView(object):
             auth_res = self.perform_authentication()
             perm_res = self.check_permissions()
 
-            if auth_res:
+            if auth_res is not None:
                 return auth_res
 
-            if perm_res:
+            if perm_res is not None:
                 return perm_res
 
             return function(self, *args, **kwargs)
@@ -95,7 +95,7 @@ class RpcView(object):
 
             if user_auth_tuple is not None:
                 self.request.user, self.request.auth = user_auth_tuple
-                return
+                return None
 
         return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
