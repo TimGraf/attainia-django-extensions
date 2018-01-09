@@ -1,6 +1,8 @@
 """
 Provides an RPCView class that is the base of all views in the RPC framework.
 """
+import logging
+
 from rest_framework import exceptions
 from rest_framework.settings import api_settings
 
@@ -8,6 +10,7 @@ from . import rpc_errors
 
 
 class RpcView(object):
+    logger = logging.getLogger(__name__)
     # The following policies may be set  per-view.
     authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
     permission_classes = api_settings.DEFAULT_PERMISSION_CLASSES
@@ -90,12 +93,12 @@ class RpcView(object):
         for authenticator in self.get_authenticators():
             try:
                 user_auth_tuple = authenticator.authenticate(self.request)
+                self.request.user, self.request.auth = user_auth_tuple
             except Exception as ex:
+                self.logger.warning("Authenticator failed with error %s", getattr(ex, 'message', repr(ex)))
                 return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
-            if user_auth_tuple is not None:
-                self.request.user, self.request.auth = user_auth_tuple
-                return None
+            return None
 
         return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
 
@@ -106,6 +109,7 @@ class RpcView(object):
         """
         for permission in self.get_permissions():
             if not permission.has_permission(self.request, self):
+                self.logger.warning("Permissions check failed.")
                 return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHORIZED_KEY: rpc_errors.NOT_AUTHORIZED_VALUE}}
 
-        return
+        return None

@@ -45,7 +45,7 @@ def rpc_error_handler(function):
         status_code = status.HTTP_201_CREATED if function.__name__ == "create" else status.HTTP_200_OK
         resp = function(self, *args, **kwargs)
 
-        if resp:
+        if resp is not None:
             if rpc_errors.ERRORS_KEY in resp.keys():
                 status_code = handle_rpc_error(resp)
 
