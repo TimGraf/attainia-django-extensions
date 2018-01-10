@@ -146,7 +146,6 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
     A DRF based ViewSet base class that provides a CRUDL HTTP API gateway
     to interact with Nameko RPC calls.
     """
-
     rpc_service_name = None
 
     def _getJwt(self, request):

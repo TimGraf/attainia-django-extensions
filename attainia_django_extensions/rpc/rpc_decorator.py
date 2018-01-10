@@ -1,5 +1,7 @@
 #pylint:disable=W0622
 """ Decorator for Nameko RPC """
+import logging
+
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -22,16 +24,20 @@ def rpc_decorator(function):
     return wrapper
 
 def handle_rpc_error(resp):
-        status_code = status.HTTP_200_OK
+    logger = logging.getLogger(__name__)
 
-        if rpc_errors.OBJ_NOT_FOUND_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_404_NOT_FOUND
-        if rpc_errors.NOT_AUTHENTICATED_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_401_UNAUTHORIZED
-        if rpc_errors.NOT_AUTHORIZED_KEY in resp[rpc_errors.ERRORS_KEY]:
-            status_code = status.HTTP_403_FORBIDDEN
+    status_code = status.HTTP_200_OK
 
-        return status_code
+    if rpc_errors.OBJ_NOT_FOUND_KEY in resp[rpc_errors.ERRORS_KEY]:
+        status_code = status.HTTP_404_NOT_FOUND
+    elif rpc_errors.NOT_AUTHENTICATED_KEY in resp[rpc_errors.ERRORS_KEY]:
+        status_code = status.HTTP_401_UNAUTHORIZED
+    elif rpc_errors.NOT_AUTHORIZED_KEY in resp[rpc_errors.ERRORS_KEY]:
+        status_code = status.HTTP_403_FORBIDDEN
+    else:
+        logger.debug("Response: %s", repr(resp))
+
+    return status_code
 
 def rpc_error_handler(function):
     """ Wrap RpcDrfViewSet methods to handle RPC errors and return appropriate HTTP response codes.
