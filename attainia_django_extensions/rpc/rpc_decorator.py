@@ -1,10 +1,12 @@
 #pylint:disable=W0622
 """ Decorator for Nameko RPC """
 import logging
+import sys
 
 from rest_framework.response import Response
 from rest_framework import status
 
+from nameko.exceptions import RpcConnectionError, RpcTimeout, RemoteError
 from nameko.rpc import rpc
 
 from cid import locals
@@ -62,8 +64,15 @@ def rpc_error_handler(function):
             logger.debug("Response: %s", repr(resp))
 
             return Response(resp, status=status_code)
-        except Exception as ex:
+
+        except (RemoteError) as ex:
+            logger.error("Remote function call failed with error %s", getattr(ex, 'message', repr(ex)))
+            return Response(None, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except (RpcConnectionError, RpcTimeout) as ex:
             logger.error("Wrapped function call failed with error %s", getattr(ex, 'message', repr(ex)))
             return Response(None, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as ex:
+            logger.error("Unexpected error: %s", sys.exc_info()[0])
+            return Response(None, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return wrapper
