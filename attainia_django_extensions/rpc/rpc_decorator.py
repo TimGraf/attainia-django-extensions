@@ -68,7 +68,7 @@ def rpc_error_handler(function):
         except (RemoteError) as ex:
             logger.error("Remote function call failed with error %s", getattr(ex, 'message', repr(ex)))
             return Response(None, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except (RpcConnectionError, RpcTimeout) as ex:
+        except (RpcConnectionError, RpcTimeout, OSError) as ex:
             logger.error("Wrapped function call failed with error %s", getattr(ex, 'message', repr(ex)))
             return Response(None, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except Exception as ex:
