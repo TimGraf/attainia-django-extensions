@@ -63,7 +63,7 @@ def rpc_error_handler(function):
 
             return Response(resp, status=status_code)
         except Exception as ex:
-            logger.error("Warpped function call failed with error %s", getattr(ex, 'message', repr(ex)))
+            logger.error("Wrapped function call failed with error %s", getattr(ex, 'message', repr(ex)))
             return Response(None, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return wrapper
