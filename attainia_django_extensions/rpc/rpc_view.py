@@ -12,8 +12,8 @@ from . import rpc_errors
 class RpcView(object):
     logger = logging.getLogger(__name__)
     # The following policies may be set  per-view.
-    authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
-    permission_classes = api_settings.DEFAULT_PERMISSION_CLASSES
+    authentication_classes = ()
+    permission_classes = ()
 
     # Allow dependency injection of other settings to make testing easier.
     settings = api_settings
@@ -100,7 +100,7 @@ class RpcView(object):
 
             return None
 
-        return {rpc_errors.ERRORS_KEY: {rpc_errors.NOT_AUTHENTICATED_KEY: rpc_errors.NOT_AUTHENTICATED_VALUE}}
+        return None
 
     def check_permissions(self):
         """
