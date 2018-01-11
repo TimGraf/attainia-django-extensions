@@ -154,7 +154,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         try:
             jwt = get_authorization_header(request).decode().split()[1]
         except Exception as ex:
-            raise exceptions.AuthenticationFailed()
+            jwt = None
 
         return jwt
 
