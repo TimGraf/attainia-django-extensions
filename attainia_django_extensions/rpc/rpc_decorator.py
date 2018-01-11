@@ -72,7 +72,7 @@ def rpc_error_handler(function):
             logger.error("Wrapped function call failed with error %s", getattr(ex, 'message', repr(ex)))
             return Response(None, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except Exception as ex:
-            logger.error("Unexpected error: %s", sys.exc_info()[0])
+            logger.error("Unexpected error => %s", repr(ex))
             return Response(None, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return wrapper
