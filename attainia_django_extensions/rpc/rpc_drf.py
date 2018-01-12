@@ -287,7 +287,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         return self.update(request, pk, *args, **kwargs)
 
     @rpc_error_handler
-    @list_route
+    @list_route(methods=["get"], url_path="search")
     def search(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
