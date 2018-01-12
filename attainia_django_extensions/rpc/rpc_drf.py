@@ -191,7 +191,7 @@ class RpcDrfMixin(RpcView):
     def search(self, *args, **kwargs):
         page_num = kwargs.pop("page", 1)
         page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
-        search_terms = kwargs.pop("search", "")
+        search_terms = kwargs.pop("query", "")
 
         if not search_terms:
             return {rpc_errors.ERRORS_KEY: {rpc_errors.MISSING_SEARCH_PARAM_KEY: rpc_errors.MISSING_SEARCH_PARAM_VALUE}}
