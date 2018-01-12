@@ -234,6 +234,19 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         rpc_service_name = self.rpc_service_name
         return rpc_service_name
 
+    @list_route(methods=["get"], url_path="search")
+    @rpc_error_handler
+    def search(self, request, *args, **kwargs):
+        jwt = self._getJwt(request)
+        params = querydict_to_dict(request.query_params)
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "search",
+            False,
+            **{**{"jwt": jwt}, **params},
+        )
+
     @rpc_error_handler
     def list(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
@@ -285,16 +298,3 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
     def partial_update(self, request, pk, *args, **kwargs):
         kwargs["partial"] = True
         return self.update(request, pk, *args, **kwargs)
-
-    @rpc_error_handler
-    @list_route(methods=["get"], url_path="search")
-    def search(self, request, *args, **kwargs):
-        jwt = self._getJwt(request)
-        params = querydict_to_dict(request.query_params)
-
-        return self.call_service_method(
-            self.get_rpc_service_name(),
-            "search",
-            False,
-            **{**{"jwt": jwt}, **params},
-        )
