@@ -10,6 +10,7 @@ from django.db.models.constants import LOOKUP_SEP
 from django.db.models.query import QuerySet
 from rest_framework import viewsets, exceptions
 from rest_framework.authentication import get_authorization_header
+from rest_framework.decorators import list_route
 
 from . import rpc_errors
 from .rpc_mixin import RpcMixin
@@ -150,10 +151,6 @@ class RpcDrfMixin(RpcView):
         queryset = self.get_queryset()
         page_num = kwargs.pop("page", 1)
         page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
-        search_terms = kwargs.pop("search", "")
-
-        if search_terms:
-            queryset = self.search_queryset(queryset, search_terms)
 
         page = self.paginate_queryset(queryset, page_num, page_size)
         if page is not None:
@@ -188,6 +185,24 @@ class RpcDrfMixin(RpcView):
             return {rpc_errors.VALIDATION_ERRORS_KEY: serializer.errors}
 
         serializer.save()
+        return serializer.data
+
+    @RpcView.auth
+    def search(self, *args, **kwargs):
+        page_num = kwargs.pop("page", 1)
+        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        search_terms = kwargs.pop("search", "")
+
+        if not search_terms:
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.MISSING_SEARCH_PARAM_KEY: rpc_errors.MISSING_SEARCH_PARAM_VALUE}}
+
+        queryset = self.search_queryset(self.get_queryset(), search_terms)
+        page = self.paginate_queryset(queryset, page_num, page_size)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True, *args, **kwargs)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True, *args, **kwargs)
         return serializer.data
 
 
@@ -270,3 +285,16 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
     def partial_update(self, request, pk, *args, **kwargs):
         kwargs["partial"] = True
         return self.update(request, pk, *args, **kwargs)
+
+    @rpc_error_handler
+    @list_route
+    def search(self, request, *args, **kwargs):
+        jwt = self._getJwt(request)
+        params = querydict_to_dict(request.query_params)
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "search",
+            False,
+            **{**{"jwt": jwt}, **params},
+        )

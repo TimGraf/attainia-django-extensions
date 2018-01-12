@@ -16,3 +16,5 @@ VALIDATION_ERRORS_KEY = "validation_errors"
 # Resource errors
 OBJ_NOT_FOUND_KEY = "not_found"
 OBJ_NOT_FOUND_ERROR_VALUE = "No object found with that ID"
+MISSING_SEARCH_PARAM_KEY = "missing_search_param"
+MISSING_SEARCH_PARAM_VALUE = "Missing required search parameter"
