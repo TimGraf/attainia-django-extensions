@@ -36,6 +36,8 @@ def handle_rpc_error(resp):
         status_code = status.HTTP_401_UNAUTHORIZED
     elif rpc_errors.NOT_AUTHORIZED_KEY in resp[rpc_errors.ERRORS_KEY]:
         status_code = status.HTTP_403_FORBIDDEN
+    elif rpc_errors.MISSING_SEARCH_PARAM_KEY in resp[rpc_errors.ERRORS_KEY]:
+        status_code = status.HTTP_400_BAD_REQUEST
 
     return status_code
 

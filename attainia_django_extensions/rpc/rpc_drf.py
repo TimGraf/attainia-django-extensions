@@ -1,11 +1,16 @@
+import operator
 from collections import OrderedDict
+from functools import reduce
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
+from django.db.models import Q
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.query import QuerySet
 from rest_framework import viewsets, exceptions
 from rest_framework.authentication import get_authorization_header
+from rest_framework.decorators import list_route
 
 from . import rpc_errors
 from .rpc_mixin import RpcMixin
@@ -26,6 +31,13 @@ class RpcDrfMixin(RpcView):
     serializer_class = None
     lookup_field = "pk"
     lookup_kwarg = None
+    search_fields = None
+    search_lookup_prefixes = {
+        "^": "istartswith",
+        "=": "iexact",
+        "@": "search",
+        "$": "iregex",
+    }
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -89,6 +101,41 @@ class RpcDrfMixin(RpcView):
             })
         ])
 
+    def get_search_fields(self):
+        return self.search_fields
+
+    def construct_search(self, field_name):
+        lookup = self.search_lookup_prefixes.get(field_name[0])
+        if lookup:
+            field_name = field_name[1:]
+        else:
+            lookup = "icontains"
+        return LOOKUP_SEP.join([field_name, lookup])
+
+    def search_queryset(self, queryset, search_terms):
+        search_fields = self.get_search_fields()
+        search_terms = search_terms.replace(",", " ").split()
+
+        if not search_fields or not search_terms:
+            return queryset
+
+        orm_lookups = [
+            self.construct_search(search_field)
+            for search_field in search_fields
+        ]
+
+        base = queryset
+        conditions = []
+        for search_term in search_terms:
+            queries = [
+                Q(**{orm_lookup: search_term})
+                for orm_lookup in orm_lookups
+            ]
+            conditions.append(reduce(operator.or_, queries))
+        queryset = queryset.filter(reduce(operator.and_, conditions))
+
+        return queryset
+
     @RpcView.auth
     def create(self, *args, **kwargs):
         serializer = self.get_serializer(data=kwargs)
@@ -140,6 +187,24 @@ class RpcDrfMixin(RpcView):
         serializer.save()
         return serializer.data
 
+    @RpcView.auth
+    def search(self, *args, **kwargs):
+        page_num = kwargs.pop("page", 1)
+        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        search_terms = kwargs.pop("query", "")
+
+        if not search_terms:
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.MISSING_SEARCH_PARAM_KEY: rpc_errors.MISSING_SEARCH_PARAM_VALUE}}
+
+        queryset = self.search_queryset(self.get_queryset(), search_terms)
+        page = self.paginate_queryset(queryset, page_num, page_size)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True, *args, **kwargs)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True, *args, **kwargs)
+        return serializer.data
+
 
 class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
     """
@@ -168,6 +233,19 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
 
         rpc_service_name = self.rpc_service_name
         return rpc_service_name
+
+    @list_route(methods=["get"], url_path="search")
+    @rpc_error_handler
+    def search(self, request, *args, **kwargs):
+        jwt = self._getJwt(request)
+        params = querydict_to_dict(request.query_params)
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "search",
+            False,
+            **{**{"jwt": jwt}, **params},
+        )
 
     @rpc_error_handler
     def list(self, request, *args, **kwargs):
