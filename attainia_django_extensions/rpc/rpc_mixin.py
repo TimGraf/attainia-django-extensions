@@ -68,8 +68,7 @@ class RpcMixin(object):
 
         except Exception as ex:
             self.logger.error("RPC call failed with error %s", getattr(ex, 'message', repr(ex)))
-
-            return None
+            raise ex
 
     def dispatch_event(self, event_name: str, event_data: dict):
         """ Dispatch event """
