@@ -87,6 +87,8 @@ class JwtScopePermission(permissions.BasePermission):
         else:
             view_class = view.__class__.__name__
 
+        self.logger.debug("View class name: %s", view_class)
+
         resource = settings.VIEW_PERMISSIONS.get(view_class, "example")
         action = self.method_actions.get(method)
 
