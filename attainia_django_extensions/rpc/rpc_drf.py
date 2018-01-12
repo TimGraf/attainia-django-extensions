@@ -103,7 +103,7 @@ class RpcDrfMixin(RpcView):
     def get_search_fields(self):
         return self.search_fields
 
-    def contstruct_search(self, field_name):
+    def construct_search(self, field_name):
         lookup = self.search_lookup_prefixes.get(field_name[0])
         if lookup:
             field_name = field_name[1:]
