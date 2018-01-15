@@ -7,9 +7,9 @@ ERRORS_KEY = "errors"
 
 # Authentication and Authorization
 NOT_AUTHENTICATED_KEY = "not_authenticated"
-NOT_AUTHENTICATED_VALUE = "User not authorized."
+NOT_AUTHENTICATED_VALUE = "User not authenticated."
 NOT_AUTHORIZED_KEY = "not_authorized"
-NOT_AUTHORIZED_VALUE = "User not authenticated."
+NOT_AUTHORIZED_VALUE = "User not authorized."
 
 VALIDATION_ERRORS_KEY = "validation_errors"
 

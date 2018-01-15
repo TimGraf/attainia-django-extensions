@@ -53,8 +53,6 @@ class JwtScopePermission(permissions.BasePermission):
         "OPTIONS": "read",
         "HEAD": "read"
     }
-    auth_service_name = settings.AUTH_SERVICE_NAME
-    validate_token_method = settings.VALIDATE_TOKEN_METHOD
 
     def has_permission(self, request, view):
         self.logger.debug("JwtScopePermission.has_permission")
@@ -86,6 +84,9 @@ class JwtScopePermission(permissions.BasePermission):
             view_class = view.__name__
         else:
             view_class = view.__class__.__name__
+
+        self.logger.debug("View class name: %s", view_class)
+        self.logger.debug("View permissions: %s", settings.VIEW_PERMISSIONS)
 
         resource = settings.VIEW_PERMISSIONS.get(view_class, "example")
         action = self.method_actions.get(method)
