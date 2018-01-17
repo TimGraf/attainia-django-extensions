@@ -150,7 +150,10 @@ class RpcDrfMixin(RpcView):
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
         page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        page_size = kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"])
+
+        if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
+            page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
 
         page = self.paginate_queryset(queryset, page_num, page_size)
         if page is not None:
@@ -190,7 +193,11 @@ class RpcDrfMixin(RpcView):
     @RpcView.auth
     def search(self, *args, **kwargs):
         page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        page_size = kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"])
+
+        if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
+            page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
+
         search_terms = kwargs.pop("query", "")
 
         if not search_terms:
