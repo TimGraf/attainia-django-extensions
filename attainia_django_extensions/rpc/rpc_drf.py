@@ -149,8 +149,8 @@ class RpcDrfMixin(RpcView):
     @RpcView.auth
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
-        page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"])
+        page_num = int(kwargs.pop("page", 1))
+        page_size = int(kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"]))
 
         if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
             page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
@@ -192,8 +192,8 @@ class RpcDrfMixin(RpcView):
 
     @RpcView.auth
     def search(self, *args, **kwargs):
-        page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"])
+        page_num = int(kwargs.pop("page", 1))
+        page_size = int(kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"]))
 
         if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
             page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
