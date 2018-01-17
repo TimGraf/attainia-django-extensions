@@ -50,7 +50,7 @@ Set the permissions on the .pypirc file.
 chmod 600 ~/.pypirc
 ```
 
-From the library's project root directory upload the newest version of the libraryr to PyPI.  Be sure the `attainia_django_extensions/__version__.py` reflects the correct version to be uploaded.
+From the library's project root directory upload the newest version of the library to PyPI.  Be sure the `attainia_django_extensions/__version__.py` reflects the correct version to be uploaded.
 
 ```
 python3 setup.py upload
