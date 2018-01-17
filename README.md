@@ -20,3 +20,29 @@ Libraries used:
 [Nameko](https://github.com/nameko/nameko)
 
 [Django Nameko](https://github.com/Attainia/django-nameko)
+
+## Updating PyPI for a New Release of this Library
+
+
+You will need to install Twine to update libraries in PyPI.  Twine is a utility for interacting with PyPI.  It's OK to install this globally on your machine.
+
+    `pip3 install twine`
+
+Create a .pypirc configuration file in your
+
+    `vi ~/.pypirc`
+
+The contents of this file should be as follows.
+
+    ```
+    [pypi]
+    username = attainia
+    password = <password found in lastpass>
+    ```
+Set the permissions on the .pypirc file.
+
+    `chmod 600 ~/.pypirc`
+
+From the library's project root directory upload the newest version of the libraryr to PyPI.  Be sure the `attainia_django_extensions/__version__.py` reflects the correct version to be uploaded.
+
+    `python3 setup.py upload`
