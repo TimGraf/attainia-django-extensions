@@ -191,6 +191,17 @@ class RpcDrfMixin(RpcView):
         return serializer.data
 
     @RpcView.auth
+    def delete(self, *args, **kwargs):
+        try:
+            instance = self.get_object(**kwargs)
+        except ObjectDoesNotExist:
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
+
+        obj_id = instance.id
+        instance.delete()
+        return {"obj_id": obj_id}
+
+    @RpcView.auth
     def search(self, *args, **kwargs):
         page_num = int(kwargs.pop("page", 1))
         page_size = int(kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"]))
@@ -298,6 +309,18 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         return self.call_service_method(
             self.get_rpc_service_name(),
             "update",
+            False,
+            **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
+        )
+
+    @rpc_error_handler
+    def delete(self, request, pk, *args, **kwargs):
+        jwt = self._getJwt(request)
+        request_data = request.data
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "delete",
             False,
             **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
