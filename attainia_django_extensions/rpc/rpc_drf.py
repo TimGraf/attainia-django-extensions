@@ -199,7 +199,7 @@ class RpcDrfMixin(RpcView):
 
         obj_id = instance.id
         instance.delete()
-        return {"obj_id": obj_id}
+        return {"obj_id": str(obj_id)}
 
     @RpcView.auth
     def search(self, *args, **kwargs):
