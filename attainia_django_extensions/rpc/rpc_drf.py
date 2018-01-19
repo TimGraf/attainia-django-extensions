@@ -197,9 +197,9 @@ class RpcDrfMixin(RpcView):
         except ObjectDoesNotExist:
             return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
 
-        obj_id = instance.id
+        instance_id = instance.id
         instance.delete()
-        return {"obj_id": str(obj_id)}
+        return {"id": str(instance_id)}
 
     @RpcView.auth
     def search(self, *args, **kwargs):
