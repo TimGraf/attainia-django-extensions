@@ -149,8 +149,11 @@ class RpcDrfMixin(RpcView):
     @RpcView.auth
     def list(self, *args, **kwargs):
         queryset = self.get_queryset()
-        page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        page_num = int(kwargs.pop("page", 1))
+        page_size = int(kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"]))
+
+        if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
+            page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
 
         page = self.paginate_queryset(queryset, page_num, page_size)
         if page is not None:
@@ -188,9 +191,24 @@ class RpcDrfMixin(RpcView):
         return serializer.data
 
     @RpcView.auth
+    def delete(self, *args, **kwargs):
+        try:
+            instance = self.get_object(**kwargs)
+        except ObjectDoesNotExist:
+            return {rpc_errors.ERRORS_KEY: {rpc_errors.OBJ_NOT_FOUND_KEY: rpc_errors.OBJ_NOT_FOUND_ERROR_VALUE}}
+
+        instance_id = instance.id
+        instance.delete()
+        return {"id": str(instance_id)}
+
+    @RpcView.auth
     def search(self, *args, **kwargs):
-        page_num = kwargs.pop("page", 1)
-        page_size = kwargs.pop("page_size", settings.DYNAMIC_REST["PAGE_SIZE"])
+        page_num = int(kwargs.pop("page", 1))
+        page_size = int(kwargs.pop("page_size", settings.PAGINATION["PAGE_SIZE"]))
+
+        if page_size > settings.PAGINATION["MAX_PAGE_SIZE"]:
+            page_size = settings.PAGINATION["MAX_PAGE_SIZE"]
+
         search_terms = kwargs.pop("query", "")
 
         if not search_terms:
@@ -291,6 +309,18 @@ class RpcDrfViewSet(viewsets.ViewSet, DjangoRpcWithCidMixin):
         return self.call_service_method(
             self.get_rpc_service_name(),
             "update",
+            False,
+            **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
+        )
+
+    @rpc_error_handler
+    def delete(self, request, pk, *args, **kwargs):
+        jwt = self._getJwt(request)
+        request_data = request.data
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "delete",
             False,
             **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )
