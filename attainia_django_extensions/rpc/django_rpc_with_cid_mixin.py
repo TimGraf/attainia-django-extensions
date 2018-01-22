@@ -1,7 +1,5 @@
-#pylint:disable=W0703
 #pylint:disable=W0622
 """ RPC Abstraction Wrapper """
-import json
 import logging
 from uuid import uuid4
 
@@ -9,7 +7,6 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from nameko.events import EventDispatcher
-from nameko.dependency_providers import Config
 
 from cid import locals
 
@@ -17,19 +14,15 @@ from cid import locals
 """
 A mixin class for making RPC calls.
 """
-class RpcMixin(object):
+class DjangoRpcWithCidMixin(object):
     """
     Example usage:
 
-        MyClass(RpcMixin):
+        MyClass(DjangoRpcWithCidMixin):
             ...
 
             # Make service RPC
             self.call_service_method("auth_publisher", "user_created", True, email, uuid)
-
-            # Dispatch event
-            self.dispatch_event("user_created", {"email": email, "uuid": uuid})
-
 
 
     Requires the class and path to the provider of the RPC connection pool in the settings.
@@ -38,8 +31,6 @@ class RpcMixin(object):
 
     """
     logger = logging.getLogger(__name__)
-    # Nameko Config is a simple dependency provider
-    config = Config()
     # Nameko event dispatcher
     dispatch = EventDispatcher()
 
@@ -60,22 +51,13 @@ class RpcMixin(object):
             with self._get_connection_pool().next() as rpc:
                 service = getattr(rpc, service_name)
                 method = getattr(service, method_name)
+                new_kwargs = {**kwargs, **{"cid": cid}}
 
                 if use_async:
-                    return method.call_async(cid, *args, **kwargs)
+                    return method.call_async(cid, *args, **new_kwargs)
                 else:
-                    return method(cid, *args, **kwargs)
+                    return method(cid, *args, **new_kwargs)
 
         except Exception as ex:
             self.logger.error("RPC call failed with error %s", getattr(ex, 'message', repr(ex)))
             raise ex
-
-    def dispatch_event(self, event_name: str, event_data: dict):
-        """ Dispatch event """
-        self.logger.debug("Dispatching event: %s, event data: %s", event_name, json.dumps(event_data))
-
-        # Get the correlation ID if it exists, otherwise create one
-        cid = locals.get_cid() or str(uuid4())
-        event_data["cid"] = cid
-
-        self.dispatch(event_name, event_data)

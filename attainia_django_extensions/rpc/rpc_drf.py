@@ -8,14 +8,14 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.query import QuerySet
-from rest_framework import viewsets, exceptions
+from rest_framework import viewsets
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import list_route
 
 from . import rpc_errors
-from .rpc_mixin import RpcMixin
+from .django_rpc_with_cid_mixin import DjangoRpcWithCidMixin
 from .rpc_view import RpcView
-from .rpc_decorator import rpc_error_handler
+from .rpc_http_error_marshaller import rpc_http_error_marshaller
 
 
 def querydict_to_dict(querydict):
@@ -206,7 +206,7 @@ class RpcDrfMixin(RpcView):
         return serializer.data
 
 
-class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
+class RpcDrfViewSet(viewsets.ViewSet, DjangoRpcWithCidMixin):
     """
     A DRF based ViewSet base class that provides a CRUDL HTTP API gateway
     to interact with Nameko RPC calls.
@@ -235,7 +235,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
         return rpc_service_name
 
     @list_route(methods=["get"], url_path="search")
-    @rpc_error_handler
+    @rpc_http_error_marshaller
     def search(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
@@ -247,7 +247,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **params},
         )
 
-    @rpc_error_handler
+    @rpc_http_error_marshaller
     def list(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
@@ -259,7 +259,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **params},
         )
 
-    @rpc_error_handler
+    @rpc_http_error_marshaller
     def retrieve(self, request, pk, *args, **kwargs):
         jwt = self._getJwt(request)
         params = querydict_to_dict(request.query_params)
@@ -271,7 +271,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **{"pk": pk}, **params},
         )
 
-    @rpc_error_handler
+    @rpc_http_error_marshaller
     def create(self, request, *args, **kwargs):
         jwt = self._getJwt(request)
 
@@ -282,7 +282,7 @@ class RpcDrfViewSet(viewsets.ViewSet, RpcMixin):
             **{**{"jwt": jwt}, **request.data}
         )
 
-    @rpc_error_handler
+    @rpc_http_error_marshaller
     def update(self, request, pk, *args, **kwargs):
         jwt = self._getJwt(request)
         request_data = request.data

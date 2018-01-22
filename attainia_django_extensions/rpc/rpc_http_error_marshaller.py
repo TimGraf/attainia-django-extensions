@@ -1,33 +1,16 @@
 #pylint:disable=W0622
 """ Decorator for Nameko RPC """
 import logging
-import sys
 
 from rest_framework.response import Response
 from rest_framework import status
 
 from nameko.exceptions import RpcConnectionError, RpcTimeout, RemoteError
-from nameko.rpc import rpc
-
-from cid import locals
 
 from . import rpc_errors
 
 
-def rpc_decorator(function):
-    """ Wrap a Namkeo RPC call """
-
-    @rpc
-    def wrapper(self, cid, *args, **kwargs):
-        """ Call wrapped function getting cid from RPC call """
-        locals.set_cid(cid)
-        return function(self, *args, **kwargs)
-
-    return wrapper
-
-def handle_rpc_error(resp):
-    logger = logging.getLogger(__name__)
-
+def __handle_rpc_error(resp):
     status_code = status.HTTP_200_OK
 
     if rpc_errors.OBJ_NOT_FOUND_KEY in resp[rpc_errors.ERRORS_KEY]:
@@ -41,7 +24,7 @@ def handle_rpc_error(resp):
 
     return status_code
 
-def rpc_error_handler(function):
+def rpc_http_error_marshaller(function):
     """ Wrap RpcDrfViewSet methods to handle RPC errors and return appropriate HTTP response codes.
 
         Methods like: list, retrieve, update, create, and delete, which require potentially handling
@@ -58,7 +41,7 @@ def rpc_error_handler(function):
 
             if resp is not None:
                 if rpc_errors.ERRORS_KEY in resp.keys():
-                    status_code = handle_rpc_error(resp)
+                    status_code = __handle_rpc_error(resp)
 
                 if rpc_errors.VALIDATION_ERRORS_KEY in resp.keys():
                     status_code = status.HTTP_400_BAD_REQUEST

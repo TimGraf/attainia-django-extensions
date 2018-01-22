@@ -21,6 +21,10 @@ Libraries used:
 
 [Django Nameko](https://github.com/Attainia/django-nameko)
 
+The Nameko Examples GiHub repository is also very helpful and worth looking into.
+
+[Nameko Examples](https://github.com/nameko/nameko-examples)
+
 ## Updating PyPI for a New Release of this Library
 
 

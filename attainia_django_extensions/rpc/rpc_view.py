@@ -3,7 +3,6 @@ Provides an RPCView class that is the base of all views in the RPC framework.
 """
 import logging
 
-from rest_framework import exceptions
 from rest_framework.settings import api_settings
 
 from . import rpc_errors

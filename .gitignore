@@ -18,6 +18,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+bin/
+include/
+pyvenv.cfg
+pip-selfcheck.json
 
 # Pip
 pip-log.txt
