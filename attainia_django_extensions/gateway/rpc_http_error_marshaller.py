@@ -7,7 +7,7 @@ from rest_framework import status
 
 from nameko.exceptions import RpcConnectionError, RpcTimeout, RemoteError
 
-from . import rpc_errors
+from ..rpc import rpc_errors
 
 
 def __handle_rpc_error(resp):
@@ -25,7 +25,7 @@ def __handle_rpc_error(resp):
     return status_code
 
 def rpc_http_error_marshaller(function):
-    """ Wrap RpcDrfViewSet methods to handle RPC errors and return appropriate HTTP response codes.
+    """ Wrap HttpRpcViewset methods to handle RPC errors and return appropriate HTTP response codes.
 
         Methods like: list, retrieve, update, create, and delete, which require potentially handling
         RPC errors and translating those into HTTP status codes.

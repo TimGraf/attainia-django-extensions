@@ -1,21 +1,17 @@
 """
-Provides an RPCView class that is the base of all views in the RPC framework.
+Provides an Django like adapter for RPC views so that we can reuse DRF
+authentication and permissions classes.
 """
 import logging
-
-from rest_framework.settings import api_settings
 
 from . import rpc_errors
 
 
-class RpcView(object):
+class RpcViewAdapter(object):
     logger = logging.getLogger(__name__)
     # The following policies may be set  per-view.
     authentication_classes = ()
     permission_classes = ()
-
-    # Allow dependency injection of other settings to make testing easier.
-    settings = api_settings
 
     # Creating a mock request object to keep permissions and authorization classes interchangable with DRF.
     class Request:
@@ -25,23 +21,6 @@ class RpcView(object):
         META = None
 
     request = Request()
-
-
-    def _put_jwt_on_auth_header(self, kwargs):
-        jwt = kwargs.pop("jwt", None)
-        self.request.META = {
-            "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
-        }
-
-    def _set_request_method(self, function_name):
-        method = {
-            "list": "GET",
-            "retrieve": "GET",
-            "create": "POST",
-            "update": "PUT",
-            "partial_update": "PATCH"
-        }.get(function_name, "GET")
-        self.request.method = method
 
     @classmethod
     def auth(cls, function):
@@ -63,6 +42,22 @@ class RpcView(object):
             return function(self, *args, **kwargs)
 
         return wrapper
+
+    def _put_jwt_on_auth_header(self, kwargs):
+        jwt = kwargs.pop("jwt", None)
+        self.request.META = {
+            "HTTP_AUTHORIZATION": "Bearer {0}".format(jwt).encode('UTF-8')
+        }
+
+    def _set_request_method(self, function_name):
+        method = {
+            "list": "GET",
+            "retrieve": "GET",
+            "create": "POST",
+            "update": "PUT",
+            "partial_update": "PATCH"
+        }.get(function_name, "GET")
+        self.request.method = method
 
 
     # Implementation borrowed from https://github.com/encode/django-rest-framework/blob/master/rest_framework/views.py

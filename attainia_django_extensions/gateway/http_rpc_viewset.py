@@ -1,20 +1,9 @@
-import operator
-from collections import OrderedDict
-from functools import reduce
-
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.db.models.constants import LOOKUP_SEP
-from django.db.models.query import QuerySet
+""" HTTP Gateway Viewset for Nameko RPC services """
 from rest_framework import viewsets
 from rest_framework.authentication import get_authorization_header
 from rest_framework.decorators import list_route
 
-from . import rpc_errors
-from .django_rpc_with_cid_mixin import DjangoRpcWithCidMixin
-from .rpc_view import RpcView
+from ..rpc.django_rpc_with_cid_mixin import DjangoRpcWithCidMixin
 from .rpc_http_error_marshaller import rpc_http_error_marshaller
 
 
@@ -22,7 +11,7 @@ def querydict_to_dict(querydict):
     return {k: v[0] if len(v) == 1 else v for k, v in querydict.lists()}
 
 
-class HttpRPCGateway(viewsets.ViewSet, DjangoRpcWithCidMixin):
+class HttpRpcViewset(viewsets.ViewSet, DjangoRpcWithCidMixin):
     """
     A DRF based ViewSet base class that provides a CRUDL HTTP API gateway
     to interact with Nameko RPC calls.
@@ -107,6 +96,18 @@ class HttpRPCGateway(viewsets.ViewSet, DjangoRpcWithCidMixin):
         return self.call_service_method(
             self.get_rpc_service_name(),
             "update",
+            False,
+            **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
+        )
+
+    @rpc_http_error_marshaller
+    def delete(self, request, pk, *args, **kwargs):
+        jwt = self._getJwt(request)
+        request_data = request.data
+
+        return self.call_service_method(
+            self.get_rpc_service_name(),
+            "delete",
             False,
             **{**{"jwt": jwt}, **{"pk": pk}, **request_data}
         )

@@ -25,6 +25,8 @@ The Nameko Examples GiHub repository is also very helpful and worth looking into
 
 [Nameko Examples](https://github.com/nameko/nameko-examples)
 
+[Nameko AMQP Retry](https://github.com/nameko/nameko-amqp-retry)
+
 ## Updating PyPI for a New Release of this Library
 
 

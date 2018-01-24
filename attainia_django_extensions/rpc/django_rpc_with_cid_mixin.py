@@ -6,8 +6,6 @@ from uuid import uuid4
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from nameko.events import EventDispatcher
-
 from cid import locals
 
 
@@ -31,8 +29,6 @@ class DjangoRpcWithCidMixin(object):
 
     """
     logger = logging.getLogger(__name__)
-    # Nameko event dispatcher
-    dispatch = EventDispatcher()
 
     def _get_connection_pool(self):
         """ Get a connection from the pool """
@@ -54,9 +50,9 @@ class DjangoRpcWithCidMixin(object):
                 new_kwargs = {**kwargs, **{"cid": cid}}
 
                 if use_async:
-                    return method.call_async(cid, *args, **new_kwargs)
+                    return method.call_async(*args, **new_kwargs)
                 else:
-                    return method(cid, *args, **new_kwargs)
+                    return method(*args, **new_kwargs)
 
         except Exception as ex:
             self.logger.error("RPC call failed with error %s", getattr(ex, 'message', repr(ex)))
