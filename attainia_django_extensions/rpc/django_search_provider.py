@@ -21,17 +21,34 @@ def querydict_to_dict(querydict):
 
 class DjangoSearchProvider(DependencyProvider):
 
+    def setup(self):
+
+        if self.container.get_queryset:
+            self.queryset = self.container.get_queryset()
+        elif self.container.queryset:
+            self.queryset = self.container.queryset
+        else:
+            raise Exception("")
+
+        if self.container.get_serializer_class:
+            self.serializer_class = self.container.get_serializer_class()
+        elif self.container.serializer_class:
+            self.serializer_class = self.container.serializer_class
+        else:
+            raise Exception("")
+
+        if self.container.search_fields:
+            self.search_fields
+
+    def get_dependency(self, worker_ctx):
+        return DjangoSearch(self.queryset, self.serializer_class, self.search_fields)
+
 
 class DjangoSearch(RpcViewAdapter):
     """
     Provides common DRF ViewSet-like abstractions for interacting with models
     and serializers via RPC.
     """
-    queryset = None
-    serializer_class = None
-    lookup_field = "pk"
-    lookup_kwarg = None
-    search_fields = None
     search_lookup_prefixes = {
         "^": "istartswith",
         "=": "iexact",
@@ -39,45 +56,10 @@ class DjangoSearch(RpcViewAdapter):
         "$": "iregex",
     }
 
-    def get_queryset(self):
-        assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method."
-            % self.__class__.__name__
-        )
-
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            # Ensure queryset is re-evaluated on each request.
-            queryset = queryset.all()
-        return queryset
-
-    def get_object(self, **kwargs):
-        queryset = self.queryset
-
-        # Perform the lookup filtering.
-        lookup_kwarg = self.lookup_kwarg or self.lookup_field
-
-        assert lookup_kwarg in kwargs, (
-            'Expected a keyword argument '
-            'named "%s". Fix your RPC call, or set the `.lookup_field` '
-            'attribute on the service correctly.' %
-            (lookup_kwarg,)
-        )
-
-        filter_kwargs = {self.lookup_field: kwargs[lookup_kwarg]}
-
-        obj = queryset.get(**filter_kwargs)
-        return obj
-
-    def get_serializer_class(self):
-        assert self.serializer_class is not None, (
-            "'%s' should either include a `serializer_class` attribute, "
-            "or override the `get_serializer_class()` method."
-            % self.__class__.__name__
-        )
-
-        return self.serializer_class
+    def __init__(self, queryset, serializer_class, search_fields):
+        self.queryset = queryset
+        self.serializer_class = serializer_class
+        self.search_fields = search_fields
 
     def get_serializer(self, *args, **kwargs):
         return self.serializer_class(*args, **kwargs)
@@ -148,7 +130,7 @@ class DjangoSearch(RpcViewAdapter):
         if not search_terms:
             return {rpc_errors.ERRORS_KEY: {rpc_errors.MISSING_SEARCH_PARAM_KEY: rpc_errors.MISSING_SEARCH_PARAM_VALUE}}
 
-        queryset = self.search_queryset(self.get_queryset(), search_terms)
+        queryset = self.search_queryset(self.queryset, search_terms)
         page = self.paginate_queryset(queryset, page_num, page_size)
         if page is not None:
             serializer = self.get_serializer(page, many=True, *args, **kwargs)
